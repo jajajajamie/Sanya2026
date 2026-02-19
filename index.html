@@ -280,7 +280,7 @@ function renderDashboard(){
   // 3-col grid
   const grid=mkEl('div','display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px');
   [{label:'已入住',val:ci,pct:Math.round((ci/total)*100)||0,color:'#22c55e',icon:'✅'},{label:'待入住',val:pd,pct:Math.round((pd/total)*100)||0,color:'#f97316',icon:'⏳'},{label:'未计划',val:un,pct:Math.round((un/total)*100)||0,color:'#9ca3af',icon:'❓'}].forEach(s=>{
-    const c=mkEl('div','padding:12px 10px');c.className='card';
+    const c=mkEl('div','padding:12px 10px;cursor:pointer');c.className='card';c.addEventListener('click',()=>{S.page='list';S.listFilter=s.label;render();});
     const top=mkEl('div','display:flex;align-items:center;gap:5px;margin-bottom:6px');top.innerHTML=`<span style="font-size:13px">${s.icon}</span><span style="font-size:11px;color:#6b7280;font-weight:600">${s.label}</span>`;
     const n=mkEl('div','font-size:30px;font-weight:800;color:#111827;line-height:1;letter-spacing:-1px');n.textContent='0';
     const track=mkEl('div');track.className='pbar-track';
