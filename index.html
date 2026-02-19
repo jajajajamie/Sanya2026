@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<title>魔都牛马闯三亚</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+@media(min-width:481px)and (max-width:768px){html{font-size:17px}}
+@media(min-width:769px)and (max-width:1024px){html{font-size:18px}}
+body{font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,sans-serif;background:#c8d4e8;-webkit-font-smoothing:antialiased;overscroll-behavior:none;min-height:100vh}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input{font-family:inherit}
+#app{min-height:100vh;background:#f5f7fa;position:relative}
+@media(min-width:769px){#app{max-width:640px;margin:0 auto;box-shadow:0 0 60px rgba(0,0,0,.18)}}
+@media(min-width:1200px){#app{max-width:520px}}
+.hide-scroll{-ms-overflow-style:none;scrollbar-width:none}
+.hide-scroll::-webkit-scrollbar{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@keyframes skel{0%,100%{background:#e8ecf0}50%{background:#f0f3f6}}
+.spin{animation:spin 1s linear infinite}
+.skel-anim{animation:skel 1.5s ease infinite;border-radius:10px}
+.shake{animation:shake .4s ease-in-out}
+.slide-up{animation:slideUp .35s cubic-bezier(.32,.72,0,1)}
+.card{background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.card-press{transition:transform .1s;cursor:pointer}
+.card-press:active{transform:scale(.985)}
+.btn-primary{width:100%;height:52px;background:#2563eb;color:#fff;border-radius:13px;font-size:16px;font-weight:700;letter-spacing:.04em;transition:all .2s;border:none;cursor:pointer}
+.btn-primary:active{transform:scale(.97);background:#1d4ed8}
+.btn-primary:disabled{opacity:.65}
+.input{width:100%;height:52px;border:2px solid #e2e8f0;border-radius:13px;padding:0 48px 0 16px;font-size:16px;outline:none;transition:border-color .2s;color:#111827;background:#fff}
+.input:focus{border-color:#2563eb}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;border-width:1px;border-style:solid}
+.badge-ci{background:#f0fdf4;color:#16a34a;border-color:#bbf7d0}
+.badge-pd{background:#fff7ed;color:#ea580c;border-color:#fed7aa}
+.badge-un{background:#f8fafc;color:#6b7280;border-color:#e2e8f0}
+.pill{padding:7px 16px;border-radius:99px;font-size:13px;font-weight:500;white-space:nowrap;flex-shrink:0;transition:all .2s;border:none;cursor:pointer}
+.pill-active{background:#2563eb;color:#fff;font-weight:700}
+.pill-idle{background:#fff;color:#4b5563;border:1.5px solid #e5e7eb}
+#nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:640px;background:#fff;border-top:1px solid #f0f2f5;z-index:50;padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(min-width:1200px){#nav{max-width:520px}}
+#nav-inner{display:flex;height:58px}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;cursor:pointer;transition:all .15s}
+.nav-lbl{font-size:10px;font-weight:500;letter-spacing:.3px;transition:color .15s}
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;animation:fadeIn .2s ease;backdrop-filter:blur(3px)}
+.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:640px;background:#f5f7fa;border-radius:22px 22px 0 0;z-index:101;display:flex;flex-direction:column;max-height:90vh;animation:slideUp .35s cubic-bezier(.32,.72,0,1);overflow:hidden}
+@media(min-width:1200px){.sheet{max-width:520px}}
+.sheet-scroll{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.sheet-scroll::-webkit-scrollbar{display:none}
+@media(orientation:landscape)and (max-height:500px){#landscape{display:flex !important}}
+#landscape{display:none;position:fixed;inset:0;background:#000;color:#fff;z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:20px}
+#ptr{overflow:hidden;display:flex;align-items:center;justify-content:center;transition:height .2s ease;height:0}
+.pbar-track{height:6px;background:#f0f2f5;border-radius:99px;overflow:hidden;margin-top:8px}
+.pbar-fill{height:100%;border-radius:99px;transition:width .7s ease-out}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;transition:background .12s;padding:2px}
+.cal-day:active{background:#f0f2f5;transform:scale(.88)}
+.grad-orange{background:linear-gradient(135deg,#f97316 0%,#dc2626 100%);color:#fff}
+.grad-blue{background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 55%,#60a5fa 100%);color:#fff}
+.page{padding:16px 16px 80px}
+@media(min-width:600px){.page{padding:20px 20px 88px}}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.page-title{font-size:19px;font-weight:800;color:#111827;letter-spacing:-.01em}
+.page-sub{font-size:12px;color:#9ca3af;margin-top:2px}
+</style>
+</head>
+<body>
+<div id="landscape">
+  <div style="font-size:56px">📱</div>
+  <p style="font-size:18px;font-weight:600">请竖屏使用</p>
+  <p style="font-size:13px;opacity:.6;margin-top:4px">旋转设备以获得最佳体验</p>
+</div>
+<div id="app">
+  <div id="view" style="min-height:100vh"></div>
+  <div id="nav" style="display:none"><div id="nav-inner"></div><div style="height:env(safe-area-inset-bottom,0px)"></div></div>
+</div>
+<script>
+// ===== SUPABASE REST (no CDN) =====
+const SB_URL='https://edtsjqrmxrmmkuwzpbzh.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkdHNqcXJteHJtbWt1d3pwYnpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzMDM2NTUsImV4cCI6MjA4NTg3OTY1NX0.42mc08cXiOxx3VqGy8KojNJCe7kkXA72Nko1e-5pS8I';
+
+async function sbFetch(table){
+  const url=`${SB_URL}/rest/v1/${table}?select=*&order=company.asc,name.asc`;
+  const r=await fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'}});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
+// ===== MOCK DATA =====
+const MOCK=[
+  {id:'1',name:'张晓明',gender:'男',position:'技术总监',company:'亚浩',status:'已入住',hotel_name:'三亚亚特兰蒂斯酒店',check_in_date:'2026-02-15',departure:'上海',destination:'三亚',flight_date:'2026-02-14',flight_number:'MU5512'},
+  {id:'2',name:'李美丽',gender:'女',position:'产品经理',company:'亚浩',status:'已入住',hotel_name:'三亚亚特兰蒂斯酒店',check_in_date:'2026-02-14',departure:'北京',destination:'三亚',flight_date:'2026-02-14',flight_number:'CA1234'},
+  {id:'3',name:'吴浩然',gender:'男',position:'前端工程师',company:'亚浩',status:'已入住',hotel_name:'三亚亚特兰蒂斯酒店',check_in_date:'2026-02-15',departure:'上海',destination:'三亚',flight_date:'2026-02-14',flight_number:'MU5513'},
+  {id:'4',name:'赵小芳',gender:'女',position:'运营专员',company:'亚浩',status:'待入住',hotel_name:null,check_in_date:null,departure:'广州',destination:'三亚',flight_date:'2026-03-10',flight_number:'CZ6789'},
+  {id:'5',name:'郑大海',gender:'男',position:'架构师',company:'亚浩',status:'未计划',hotel_name:null,check_in_date:null,departure:'武汉',destination:'三亚',flight_date:null,flight_number:null},
+  {id:'6',name:'刘强',gender:'男',position:'工程师',company:'SMT',status:'已入住',hotel_name:'三亚湾大酒店',check_in_date:'2026-02-14',departure:'深圳',destination:'三亚',flight_date:'2026-02-14',flight_number:'ZH9876'},
+  {id:'7',name:'陈思思',gender:'女',position:'设计师',company:'SMT',status:'待入住',hotel_name:null,check_in_date:null,departure:'上海',destination:'三亚',flight_date:'2026-02-20',flight_number:'MU5512'},
+  {id:'8',name:'孙伟',gender:'男',position:'开发工程师',company:'SMT',status:'未计划',hotel_name:null,check_in_date:null,departure:'上海',destination:'三亚',flight_date:null,flight_number:null},
+  {id:'9',name:'林晓雨',gender:'女',position:'UI设计师',company:'SMT',status:'待入住',hotel_name:null,check_in_date:null,departure:'成都',destination:'三亚',flight_date:'2026-02-22',flight_number:'3U8501'},
+  {id:'10',name:'钱晨曦',gender:'女',position:'测试工程师',company:'SMT',status:'已入住',hotel_name:'三亚湾大酒店',check_in_date:'2026-02-16',departure:'南京',destination:'三亚',flight_date:'2026-02-15',flight_number:'GS7862'},
+  {id:'11',name:'王志文',gender:'男',position:'销售经理',company:'其他',status:'待入住',hotel_name:null,check_in_date:null,departure:'上海',destination:'三亚',flight_date:'2026-03-05',flight_number:'FM9345'},
+  {id:'12',name:'周静',gender:'女',position:'HR',company:'其他',status:'已入住',hotel_name:'三亚湾大酒店',check_in_date:'2026-02-16',departure:'杭州',destination:'三亚',flight_date:'2026-02-16',flight_number:'MF8023'},
+];
+
+let _cache=null,_cacheTime=0;
+async function fetchPersons(force){
+  if(!force&&_cache&&Date.now()-_cacheTime<25000)return _cache;
+  try{
+    const d=await sbFetch('persons');
+    if(d&&d.length>0){_cache=d;_cacheTime=Date.now();return d;}
+    throw new Error('empty');
+  }catch(e){
+    console.warn('Supabase fallback:',e.message);
+    if(!_cache){_cache=MOCK;_cacheTime=Date.now();}
+    return _cache;
+  }
+}
+
+// ===== STATE =====
+const S={loggedIn:false,page:'dashboard',persons:[],loading:true,listFilter:'全部',modal:null,rbTime:{}};
+function setState(p){Object.assign(S,p);render();}
+
+// ===== AUTO REFRESH =====
+let _arid=null,_refreshing=false;
+async function doRefresh(){
+  if(_refreshing)return;_refreshing=true;
+  try{
+    const d=await fetchPersons(true);
+    S.persons=d;S.loading=false;S.lastUp=new Date();render();
+  }catch(e){}
+  _refreshing=false;
+}
+function startAuto(){
+  if(_arid)clearInterval(_arid);
+  _arid=setInterval(doRefresh,30000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')doRefresh();});
+}
+
+// ===== PTR =====
+let _ptrStartY=0,_ptrDist=0,_ptrOn=false;
+const PTR_T=80;
+function setupPTR(el){
+  el.addEventListener('touchstart',e=>{if(window.scrollY>5)return;_ptrOn=true;_ptrStartY=e.touches[0].clientY;},{passive:true});
+  el.addEventListener('touchmove',e=>{
+    if(!_ptrOn||_refreshing)return;
+    const d=Math.min((e.touches[0].clientY-_ptrStartY)*0.6,120);
+    if(d>0){_ptrDist=d;const ptr=el.querySelector('.ptr-el');if(ptr){ptr.style.height=d+'px';const t=ptr.querySelector('.ptr-txt');if(t)t.textContent=d>=PTR_T?'松开刷新':'下拉刷新';}}
+  },{passive:true});
+  el.addEventListener('touchend',async()=>{
+    if(!_ptrOn)return;_ptrOn=false;
+    if(_ptrDist>=PTR_T){const ptr=el.querySelector('.ptr-el');if(ptr)ptr.style.height=PTR_T+'px';await doRefresh();}
+    _ptrDist=0;const ptr=el.querySelector('.ptr-el');if(ptr)ptr.style.height='0';
+  },{passive:true});
+}
+function mkPTR(){
+  const d=document.createElement('div');
+  d.className='ptr-el';d.style.cssText='overflow:hidden;display:flex;align-items:center;justify-content:center;transition:height .2s ease;height:0';
+  d.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:20px;height:20px;border-radius:50%;border:2px solid #d1d5db;border-top-color:transparent;transition:transform .1s"></div><span class="ptr-txt" style="font-size:11px;color:#9ca3af">下拉刷新</span></div>';
+  return d;
+}
+
+// ===== DOM HELPERS =====
+function mkEl(tag,css,html){const e=document.createElement(tag);if(css)e.style.cssText=css;if(html)e.innerHTML=html;return e;}
+function mkSkel(h){const d=mkEl('div','margin-bottom:10px');d.className='skel-anim';d.style.height=h+'px';return d;}
+function mkBadge(st){
+  const b=mkEl('span');
+  b.className='badge '+({'已入住':'badge-ci','待入住':'badge-pd','未计划':'badge-un'}[st]||'badge-un');
+  b.innerHTML=`<span style="width:5px;height:5px;border-radius:50%;display:inline-block;background:${'已入住'===st?'#22c55e':'待入住'===st?'#f97316':'#9ca3af'}"></span>${st}`;
+  return b;
+}
+function mkRefBtn(key){
+  const wrap=mkEl('div','display:flex;align-items:center;gap:8px');
+  if(S.rbTime[key]){const s=mkEl('span','font-size:11px;color:#b0bac8');s.textContent='更新于 '+S.rbTime[key].toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});wrap.appendChild(s);}
+  const btn=mkEl('button','padding:8px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.1);border:1px solid #e9ecef;display:flex;align-items:center;justify-content:center');
+  const svg='<svg id="rbs-'+key+'" width="15" height="15" fill="none" stroke="#4b5563" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>';
+  btn.innerHTML=svg;
+  btn.addEventListener('click',async()=>{
+    btn.disabled=true;const s=btn.querySelector('svg');if(s)s.classList.add('spin');
+    await doRefresh();S.rbTime[key]=new Date();if(s)s.classList.remove('spin');btn.disabled=false;render();
+  });
+  btn.addEventListener('mousedown',()=>btn.style.transform='scale(.88)');
+  btn.addEventListener('mouseup',()=>btn.style.transform='scale(1)');
+  wrap.appendChild(btn);return wrap;
+}
+function animNum(t,el){
+  const dur=900,start=Date.now();
+  (function step(){const p=Math.min((Date.now()-start)/dur,1),e=1-Math.pow(1-p,4);el.textContent=Math.round(t*e);if(p<1)requestAnimationFrame(step);})();
+}
+
+// ===== LOGIN =====
+function renderLogin(){
+  const v=document.getElementById('view');v.innerHTML='';v.style.cssText='min-height:100vh;display:flex;flex-direction:column';
+  const hero=mkEl('div','position:relative;padding:64px 0 56px;text-align:center;flex-shrink:0');
+  hero.className='grad-blue';
+  hero.innerHTML='<div style="font-size:72px;line-height:1;margin-bottom:20px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.2))">✈️</div><h1 style="color:#fff;font-size:28px;font-weight:800;letter-spacing:2px;margin-bottom:8px">魔都牛马闯三亚</h1><p style="color:rgba(255,255,255,.65);font-size:14px;letter-spacing:1px">住宿信息系统 · 2026</p><svg style="position:absolute;bottom:-1px;left:0;width:100%" viewBox="0 0 400 32" preserveAspectRatio="none"><path d="M0,32 Q100,2 200,18 T400,2 L400,32 Z" fill="#f5f7fa"/></svg>';
+  v.appendChild(hero);
+
+  const form=mkEl('div','flex:1;padding:40px 24px 32px;display:flex;flex-direction:column;justify-content:center;max-width:400px;width:100%;margin:0 auto');
+  const lbl=mkEl('label','display:block;font-size:13px;font-weight:700;color:#4b5563;margin-bottom:10px;letter-spacing:.4px');lbl.textContent='访问密码';
+  const wrap=mkEl('div','position:relative;margin-bottom:6px');
+  const inp=document.createElement('input');inp.className='input';inp.type='password';inp.placeholder='请输入密码';inp.autocomplete='off';
+  const eyeBtn=mkEl('button','position:absolute;right:12px;top:50%;transform:translateY(-50%);padding:8px;color:#9ca3af;font-size:16px;line-height:1');eyeBtn.textContent='👁️';
+  eyeBtn.addEventListener('click',()=>{inp.type=inp.type==='password'?'text':'password';eyeBtn.textContent=inp.type==='password'?'👁️':'🙈';});
+  wrap.appendChild(inp);wrap.appendChild(eyeBtn);
+  const err=mkEl('p','font-size:13px;color:#ef4444;text-align:center;min-height:20px;margin-bottom:12px;margin-top:6px');
+  const loginBtn=document.createElement('button');loginBtn.className='btn-primary';loginBtn.textContent='进入系统';
+  const doLogin=async()=>{
+    const pw=inp.value.trim();
+    if(!pw){err.textContent='请输入密码';err.classList.remove('shake');void err.offsetWidth;err.classList.add('shake');return;}
+    loginBtn.disabled=true;loginBtn.textContent='验证中...';
+    await new Promise(r=>setTimeout(r,400));
+    if(pw==='sanya2026'){
+      setState({loggedIn:true,loading:true});
+      fetchPersons().then(d=>{setState({persons:d,loading:false,lastUp:new Date()});startAuto();});
+    }else{
+      err.textContent='密码错误，请重试';err.classList.remove('shake');void err.offsetWidth;err.classList.add('shake');
+      loginBtn.disabled=false;loginBtn.textContent='进入系统';
+    }
+  };
+  inp.addEventListener('keydown',e=>e.key==='Enter'&&doLogin());
+  loginBtn.addEventListener('click',doLogin);
+  const hint=mkEl('p','text-align:center;font-size:12px;color:#b0bac8;margin-top:24px');hint.textContent='🏖️ 三亚 2026 · 出行保障系统';
+  form.append(lbl,wrap,err,loginBtn,hint);
+  v.appendChild(form);
+  setTimeout(()=>inp.focus(),100);
+}
+
+// ===== DASHBOARD =====
+function renderDashboard(){
+  const v=document.getElementById('view');v.innerHTML='';
+  if(S.loading){const p=mkEl('div');p.className='page';for(let i=0;i<5;i++)p.appendChild(mkSkel(i===0?56:74));v.appendChild(p);return;}
+  const ps=S.persons,total=ps.length;
+  const ci=ps.filter(p=>p.status==='已入住').length,pd=ps.filter(p=>p.status==='待入住').length,un=ps.filter(p=>p.status==='未计划').length;
+  const dist={亚浩:ps.filter(p=>p.company==='亚浩').length,SMT:ps.filter(p=>p.company==='SMT').length,其他:ps.filter(p=>p.company==='其他').length};
+  const pg=mkEl('div');pg.className='page';setupPTR(pg);pg.appendChild(mkPTR());
+
+  // Header
+  const hd=mkEl('div');hd.className='section-head';
+  const tt=mkEl('div');tt.innerHTML='<h1 class="page-title">数据看板</h1><p class="page-sub">实时住宿状态</p>';
+  hd.appendChild(tt);hd.appendChild(mkRefBtn('dashboard'));pg.appendChild(hd);
+
+  // Total card
+  const tc=mkEl('div','margin-bottom:12px;overflow:hidden;position:relative;padding:22px 20px;background:linear-gradient(135deg,#1e40af,#2563eb,#3b82f6)');
+  tc.className='card';
+  const tLeft=mkEl('div');tLeft.innerHTML='<p style="font-size:13px;color:rgba(255,255,255,.75);margin-bottom:8px;font-weight:500">总注册人数</p>';
+  const tNum=mkEl('div','font-size:48px;font-weight:800;line-height:1;letter-spacing:-2px;color:#fff');tNum.textContent='0';
+  tLeft.appendChild(tNum);
+  const tIcon=mkEl('div','font-size:48px;opacity:.2;position:absolute;right:16px;top:50%;transform:translateY(-50%)');tIcon.textContent='👥';
+  tc.appendChild(tLeft);tc.appendChild(tIcon);pg.appendChild(tc);
+  setTimeout(()=>animNum(total,tNum),50);
+
+  // 3-col grid
+  const grid=mkEl('div','display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px');
+  [{label:'已入住',val:ci,pct:Math.round((ci/total)*100)||0,color:'#22c55e',icon:'✅'},{label:'待入住',val:pd,pct:Math.round((pd/total)*100)||0,color:'#f97316',icon:'⏳'},{label:'未计划',val:un,pct:Math.round((un/total)*100)||0,color:'#9ca3af',icon:'❓'}].forEach(s=>{
+    const c=mkEl('div','padding:12px 10px');c.className='card';
+    const top=mkEl('div','display:flex;align-items:center;gap:5px;margin-bottom:6px');top.innerHTML=`<span style="font-size:13px">${s.icon}</span><span style="font-size:11px;color:#6b7280;font-weight:600">${s.label}</span>`;
+    const n=mkEl('div','font-size:30px;font-weight:800;color:#111827;line-height:1;letter-spacing:-1px');n.textContent='0';
+    const track=mkEl('div');track.className='pbar-track';
+    const fill=mkEl('div');fill.className='pbar-fill';fill.style.cssText=`width:0;background:${s.color}`;track.appendChild(fill);
+    const pct=mkEl('p','font-size:10px;color:#9ca3af;margin-top:4px');pct.textContent=s.pct+'%';
+    c.append(top,n,track,pct);grid.appendChild(c);
+    setTimeout(()=>animNum(s.val,n),80);setTimeout(()=>{fill.style.width=s.pct+'%';},150);
+  });
+  pg.appendChild(grid);
+
+  // Bar chart
+  const bc=mkEl('div','padding:18px 16px;margin-bottom:12px');bc.className='card';
+  bc.innerHTML='<p style="font-size:14px;font-weight:700;color:#374151;margin-bottom:18px">📊 各公司人数分布</p>';
+  const bars=mkEl('div','display:flex;align-items:flex-end;gap:20px;height:110px;padding:0 12px');
+  const maxV=Math.max(dist.亚浩,dist.SMT,dist.其他,1);
+  [{name:'亚浩',val:dist.亚浩,color:'#f97316'},{name:'SMT',val:dist.SMT,color:'#3b82f6'},{name:'其他',val:dist.其他,color:'#9ca3af'}].forEach(d=>{
+    const col=mkEl('div','flex:1;display:flex;flex-direction:column;align-items:center;gap:6px');
+    const vl=mkEl('span',`font-size:14px;font-weight:800;color:${d.color}`);vl.textContent=d.val;
+    const bar=mkEl('div',`width:100%;max-width:56px;border-radius:6px 6px 0 0;background:${d.color};height:0;transition:height .6s ease;min-height:3px`);
+    const nl=mkEl('span','font-size:12px;color:#6b7280;font-weight:600');nl.textContent=d.name;
+    col.append(vl,bar,nl);bars.appendChild(col);
+    setTimeout(()=>{bar.style.height=Math.max((d.val/maxV)*90,4)+'px';},100);
+  });
+  bc.appendChild(bars);pg.appendChild(bc);
+  const note=mkEl('p','text-align:center;font-size:11px;color:#c8d0db;padding-bottom:8px');note.textContent='数据每30秒自动同步 · 下拉手动刷新';pg.appendChild(note);
+  v.appendChild(pg);
+}
+
+// ===== LIST =====
+function renderList(){
+  const v=document.getElementById('view');v.innerHTML='';
+  const wrap=mkEl('div');
+  const sticky=mkEl('div','position:sticky;top:0;z-index:20;background:#f5f7fa;border-bottom:1px solid #edf0f4;padding:16px 16px 10px');
+  const hd=mkEl('div','display:flex;align-items:center;justify-content:space-between;margin-bottom:12px');
+  const tt=mkEl('div');tt.innerHTML=`<h1 class="page-title">人员列表</h1><p class="page-sub">共 ${S.persons.length} 人</p>`;
+  hd.appendChild(tt);hd.appendChild(mkRefBtn('list'));sticky.appendChild(hd);
+  const pills=mkEl('div','display:flex;gap:8px;overflow-x:auto;padding-bottom:2px');pills.className='hide-scroll';
+  ['全部','已入住','待入住','未计划'].forEach(f=>{
+    const p=document.createElement('button');p.className='pill '+(f===S.listFilter?'pill-active':'pill-idle');p.textContent=f;
+    p.addEventListener('click',()=>{S.listFilter=f;renderList();});
+    pills.appendChild(p);
+  });
+  sticky.appendChild(pills);wrap.appendChild(sticky);
+  if(S.loading){const pg=mkEl('div');pg.className='page';for(let i=0;i<6;i++)pg.appendChild(mkSkel(70));wrap.appendChild(pg);v.appendChild(wrap);return;}
+  const content=mkEl('div','padding:14px 16px 80px;display:flex;flex-direction:column;gap:20px');
+  setupPTR(content);content.appendChild(mkPTR());
+  const AVC={亚浩:'#f97316',SMT:'#2563eb',其他:'#8b5cf6'};
+  let any=false;
+  ['SMT','亚浩','其他'].forEach(co=>{
+    let grp=S.persons.filter(p=>p.company===co);
+    if(S.listFilter!=='全部')grp=grp.filter(p=>p.status===S.listFilter);
+    if(!grp.length)return;any=true;
+    const sec=mkEl('div');
+    sec.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:4px;height:18px;border-radius:2px;background:${AVC[co]}"></div><span style="font-size:13px;font-weight:800;color:#374151">${co}</span><span style="font-size:12px;color:#9ca3af">(${grp.length}人)</span></div>`;
+    grp.forEach(p=>{
+      const card=mkEl('div','padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px');card.className='card card-press';
+      const av=mkEl('div',`width:40px;height:40px;border-radius:50%;background:${AVC[p.company]};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0`);av.textContent=p.name.charAt(0);
+      const info=mkEl('div','flex:1;min-width:0');
+      const r1=mkEl('div','display:flex;align-items:center;gap:8px;margin-bottom:4px');
+      const nm=mkEl('span','font-size:15px;font-weight:700;color:#111827');nm.textContent=p.name;
+      r1.appendChild(nm);r1.appendChild(mkBadge(p.status));
+      const r2=mkEl('div','font-size:12px;color:#9ca3af;display:flex;align-items:center;gap:4px');
+      r2.innerHTML=`<span>✈️</span><span>${p.departure}</span><span style="color:#d1d5db">→</span><span>${p.destination}</span>`+(p.flight_number?`<span style="color:#d1d5db">(${p.flight_number})</span>`:'');
+      info.appendChild(r1);info.appendChild(r2);
+      if(p.status==='已入住'&&p.hotel_name){
+        const r3=mkEl('div','font-size:12px;color:#9ca3af;margin-top:3px;display:flex;align-items:center;gap:4px;overflow:hidden');
+        r3.innerHTML=`<span>🏨</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.hotel_name}</span>`+(p.check_in_date?`<span style="flex-shrink:0;color:#d1d5db">· ${p.check_in_date}</span>`:'');
+        info.appendChild(r3);
+      }
+      const chv=mkEl('span');chv.innerHTML='<svg width="14" height="14" fill="none" stroke="#d1d5db" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>';
+      card.append(av,info,chv);
+      card.addEventListener('click',()=>{S.modal=p;renderModal();});
+      sec.appendChild(card);
+    });
+    content.appendChild(sec);
+  });
+  if(!any){const e=mkEl('div','text-align:center;padding:60px 20px;color:#b0bac8');e.innerHTML='<div style="font-size:48px;margin-bottom:16px">🔍</div><p style="font-size:15px">暂无相关人员</p>';content.appendChild(e);}
+  const note=mkEl('p','text-align:center;font-size:11px;color:#c8d0db;margin-top:8px');note.textContent='数据每30秒自动同步';content.appendChild(note);
+  wrap.appendChild(content);v.appendChild(wrap);
+}
+
+// ===== CALENDAR =====
+function renderCalendar(){
+  const v=document.getElementById('view');v.innerHTML='';
+  const pg=mkEl('div');pg.className='page';setupPTR(pg);pg.appendChild(mkPTR());
+  const hd=mkEl('div');hd.className='section-head';
+  hd.innerHTML='<div><h1 class="page-title">入住日历</h1><p class="page-sub">2026年 2–4月</p></div>';
+  hd.appendChild(mkRefBtn('calendar'));pg.appendChild(hd);
+  if(S.loading){for(let i=0;i<3;i++)pg.appendChild(mkSkel(220));v.appendChild(pg);return;}
+  const calMap={};
+  S.persons.forEach(p=>{
+    if(p.check_in_date&&p.status==='已入住'){calMap[p.check_in_date]=calMap[p.check_in_date]||{ci:0,pd:0};calMap[p.check_in_date].ci++;}
+    if(p.flight_date&&p.status==='待入住'){calMap[p.flight_date]=calMap[p.flight_date]||{ci:0,pd:0};calMap[p.flight_date].pd++;}
+  });
+  const leg=mkEl('div','display:flex;gap:16px;margin-bottom:14px');
+  leg.innerHTML='<div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:#22c55e;display:block"></span><span style="font-size:12px;color:#4b5563">已入住</span></div><div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:#f97316;display:block"></span><span style="font-size:12px;color:#4b5563">待入住（航班日期）</span></div>';
+  pg.appendChild(leg);
+  const WD=['日','一','二','三','四','五','六'];
+  const today=new Date().toISOString().split('T')[0];
+  [{y:2026,m:1,label:'2026年 2月'},{y:2026,m:2,label:'2026年 3月'},{y:2026,m:3,label:'2026年 4月'}].forEach(({y,m,label})=>{
+    const card=mkEl('div','padding:16px;margin-bottom:12px');card.className='card';
+    const ml=mkEl('p','font-size:15px;font-weight:800;color:#111827;margin-bottom:12px');ml.textContent=label;card.appendChild(ml);
+    const wkR=mkEl('div');wkR.className='cal-grid';
+    WD.forEach(w=>{const d=mkEl('div','text-align:center;font-size:11px;color:#9ca3af;padding:5px 0');d.textContent=w;wkR.appendChild(d);});
+    card.appendChild(wkR);
+    const grid=mkEl('div');grid.className='cal-grid';
+    const fd=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate();
+    for(let i=0;i<fd;i++)grid.appendChild(mkEl('div'));
+    for(let d=1;d<=dim;d++){
+      const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const dd=calMap[ds]||{ci:0,pd:0};const isT=today===ds;
+      const cell=mkEl('div');cell.className='cal-day';if(isT)cell.style.background='#eff6ff';
+      const dn=mkEl('span',`font-size:13px;font-weight:${isT?700:500};color:${isT?'#2563eb':'#374151'};line-height:1`);dn.textContent=d;
+      const dots=mkEl('div','display:flex;gap:2px;margin-top:2px;align-items:center;height:14px');
+      if(dd.ci>0){const s=mkEl('span','font-size:10px;font-weight:800;color:#22c55e;line-height:1');s.textContent=dd.ci;dots.appendChild(s);}
+      if(dd.ci>0&&dd.pd>0){const s=mkEl('span','font-size:8px;color:#e5e7eb');s.textContent='|';dots.appendChild(s);}
+      if(dd.pd>0){const s=mkEl('span','font-size:10px;font-weight:800;color:#f97316;line-height:1');s.textContent=dd.pd;dots.appendChild(s);}
+      cell.append(dn,dots);grid.appendChild(cell);
+    }
+    card.appendChild(grid);pg.appendChild(card);
+  });
+  const note=mkEl('p','text-align:center;font-size:11px;color:#c8d0db;padding-bottom:8px');note.textContent='数据每30秒自动同步';pg.appendChild(note);
+  v.appendChild(pg);
+}
+
+// ===== MODAL =====
+function renderModal(){
+  const old=document.getElementById('modal-root');if(old)old.remove();
+  const p=S.modal;if(!p)return;
+  const root=mkEl('div');root.id='modal-root';
+  const bd=mkEl('div');bd.className='backdrop';bd.addEventListener('click',()=>{S.modal=null;root.remove();});
+  const sheet=mkEl('div');sheet.className='sheet';
+  const handle=mkEl('div','padding:12px 0 0;display:flex;justify-content:center;flex-shrink:0');
+  const bar=mkEl('div','width:38px;height:4px;border-radius:99px;background:#dde3ed');handle.appendChild(bar);
+  const sh=mkEl('div','padding:18px 20px 26px;flex-shrink:0;position:relative');sh.className='grad-orange';
+  const closeBtn=mkEl('button','position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center');
+  closeBtn.textContent='✕';closeBtn.addEventListener('click',()=>{S.modal=null;root.remove();});
+  const av=mkEl('div','width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;flex-shrink:0');av.textContent=p.name.charAt(0);
+  const nd=mkEl('div');
+  nd.innerHTML=`<h2 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px">${p.name}</h2><p style="font-size:13px;color:rgba(255,255,255,.72);margin-bottom:8px">${p.position} · ${p.company}</p>`;
+  nd.appendChild(mkBadge(p.status));
+  const hf=mkEl('div','display:flex;align-items:center;gap:14px;margin-top:4px');hf.append(av,nd);
+  sh.append(closeBtn,hf);
+  const scroll=mkEl('div','padding:16px 16px 32px;display:flex;flex-direction:column;gap:12px');scroll.className='sheet-scroll';
+  [{title:'👤 基本信息',rows:[['姓名',p.name],['性别',p.gender],['岗位',p.position],['分组',p.company]]},
+   {title:'🏨 住宿信息',rows:[['酒店名',p.hotel_name||'暂未安排'],['入住日期',p.check_in_date||'—']]},
+   {title:'✈️ 航班信息',rows:[['出发地',p.departure],['目的地',p.destination],['航班日期',p.flight_date||'—'],['航班号',p.flight_number||'—']]}].forEach(sec=>{
+    const card=mkEl('div','padding:16px');card.className='card';
+    const st=mkEl('p','font-size:13px;font-weight:800;color:#374151;margin-bottom:12px');st.textContent=sec.title;card.appendChild(st);
+    sec.rows.forEach(([k,val],i)=>{
+      const row=mkEl('div','display:flex;justify-content:space-between;align-items:center;padding:8px 0;'+(i<sec.rows.length-1?'border-bottom:1px solid #f5f7fa':''));
+      const ke=mkEl('span','font-size:13px;color:#9ca3af');ke.textContent=k;
+      const ve=mkEl('span','font-size:13px;font-weight:700;color:#111827;max-width:60%;text-align:right');ve.textContent=val;
+      row.append(ke,ve);card.appendChild(row);
+    });
+    scroll.appendChild(card);
+  });
+  sheet.append(handle,sh,scroll);
+  let swY=0;
+  sheet.addEventListener('touchstart',e=>{swY=e.touches[0].clientY;},{passive:true});
+  sheet.addEventListener('touchmove',e=>{if(e.touches[0].clientY-swY>90){S.modal=null;root.remove();}},{passive:true});
+  root.append(bd,sheet);document.getElementById('app').appendChild(root);
+}
+
+// ===== NAV =====
+function renderNav(){
+  const nav=document.getElementById('nav');nav.style.display='block';
+  const inner=document.getElementById('nav-inner');inner.innerHTML='';
+  const tabs=[
+    {key:'dashboard',label:'看板',svg:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'},
+    {key:'list',label:'人员',svg:'<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85"/>'},
+    {key:'calendar',label:'日历',svg:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'},
+  ];
+  tabs.forEach(t=>{
+    const active=S.page===t.key;const c=active?'#2563eb':'#9ca3af';
+    const btn=mkEl('button');btn.className='nav-btn';
+    btn.innerHTML=`<div style="transform:scale(${active?1.1:1});transition:transform .2s"><svg width="22" height="22" fill="none" stroke="${c}" stroke-width="1.8" viewBox="0 0 24 24">${t.svg}</svg></div><span class="nav-lbl" style="color:${c};font-weight:${active?700:500}">${t.label}</span>`;
+    btn.addEventListener('click',()=>{if(S.page!==t.key){S.page=t.key;render();}});
+    inner.appendChild(btn);
+  });
+}
+
+// ===== RENDER =====
+function render(){
+  if(!S.loggedIn){document.getElementById('nav').style.display='none';renderLogin();return;}
+  renderNav();
+  switch(S.page){case 'dashboard':renderDashboard();break;case 'list':renderList();break;case 'calendar':renderCalendar();break;}
+}
+
+render();
+</script>
+</body>
+</html>
