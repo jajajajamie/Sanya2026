@@ -267,7 +267,22 @@ function renderDashboard(){
   // Header
   const hd=mkEl('div');hd.className='section-head';
   const tt=mkEl('div');tt.innerHTML='<h1 class="page-title">数据看板</h1><p class="page-sub">实时住宿状态</p>';
-  hd.appendChild(tt);hd.appendChild(mkRefBtn('dashboard'));pg.appendChild(hd);
+  // Live clock
+  const clockEl=mkEl('div','text-align:right;flex-shrink:0;margin-right:4px');
+  function updateClock(){
+    const now=new Date();
+    const dateStr=now.toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit',weekday:'short'});
+    const timeStr=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    clockEl.innerHTML=`<p style="font-size:13px;font-weight:700;color:#374151;line-height:1.3">${dateStr}</p><p style="font-size:12px;color:#2563eb;font-weight:700;font-variant-numeric:tabular-nums">${timeStr}</p>`;
+  }
+  updateClock();
+  const clockTimer=setInterval(updateClock,1000);
+  // Stop clock when leaving dashboard
+  const _origRender=window._dashClockCleanup;if(_origRender)clearInterval(_origRender);
+  window._dashClockCleanup=clockTimer;
+  const hdRight=mkEl('div','display:flex;align-items:center;gap:8px');
+  hdRight.appendChild(clockEl);hdRight.appendChild(mkRefBtn('dashboard'));
+  hd.appendChild(tt);hd.appendChild(hdRight);pg.appendChild(hd);
 
   // Total card
   const tc=mkEl('div','margin-bottom:12px;overflow:hidden;position:relative;padding:22px 20px;background:linear-gradient(135deg,#1e40af,#2563eb,#3b82f6)');
@@ -392,7 +407,15 @@ function renderList(){
       const nm=mkEl('span','font-size:15px;font-weight:700;color:#111827');nm.textContent=p.name;
       r1.appendChild(nm);r1.appendChild(mkBadge(p.status));
       const r2=mkEl('div','font-size:12px;color:#9ca3af;display:flex;align-items:center;gap:4px');
-      r2.innerHTML=`<span>✈️</span><span>${p.departure}</span><span style="color:#d1d5db">→</span><span>${p.destination}</span>`+(p.flight_number?`<span style="color:#d1d5db">(${p.flight_number})</span>`:'');
+      function fmtFlight(fd){
+        if(!fd)return '';
+        if(fd.includes('T')){const[d,t]=fd.split('T');return d+' '+t.slice(0,5);}
+        return fd;
+      }
+      const flightInfo=p.status==='待入住'&&p.flight_number
+        ?(p.flight_date?`<span style="color:#d1d5db"> · </span><span style="color:#f97316;font-weight:600">${fmtFlight(p.flight_date)}</span>`:'')+`<span style="color:#d1d5db"> · </span><span>${p.flight_number}</span>`
+        :(p.flight_number?`<span style="color:#d1d5db">(${p.flight_number})</span>`:'');
+      r2.innerHTML=`<span>✈️</span><span>${p.departure}</span><span style="color:#d1d5db">→</span><span>${p.destination}</span>`+flightInfo;
       info.appendChild(r1);info.appendChild(r2);
       if(p.status==='已入住'&&p.hotel_name){
         const r3=mkEl('div','font-size:12px;color:#9ca3af;margin-top:3px;display:flex;align-items:center;gap:4px;overflow:hidden');
@@ -422,7 +445,7 @@ function renderCalendar(){
   const calMap={};
   S.persons.forEach(p=>{
     if(p.check_in_date&&p.status==='已入住'){calMap[p.check_in_date]=calMap[p.check_in_date]||{ci:0,pd:0};calMap[p.check_in_date].ci++;}
-    if(p.flight_date&&p.status==='待入住'){calMap[p.flight_date]=calMap[p.flight_date]||{ci:0,pd:0};calMap[p.flight_date].pd++;}
+    if(p.flight_date&&p.status==='待入住'){const fd=p.flight_date.split('T')[0];calMap[fd]=calMap[fd]||{ci:0,pd:0};calMap[fd].pd++;}
   });
   const leg=mkEl('div','display:flex;gap:16px;margin-bottom:14px');
   leg.innerHTML='<div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:#22c55e;display:block"></span><span style="font-size:12px;color:#4b5563">已入住</span></div><div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:#f97316;display:block"></span><span style="font-size:12px;color:#4b5563">待入住（航班日期）</span></div>';
@@ -477,7 +500,7 @@ function renderModal(){
   const scroll=mkEl('div','padding:16px 16px 32px;display:flex;flex-direction:column;gap:12px');scroll.className='sheet-scroll';
   [{title:'👤 基本信息',rows:[['姓名',p.name],['性别',p.gender],['岗位',p.position],['分组',p.company]]},
    {title:'🏨 住宿信息',rows:[['酒店名',p.hotel_name||'暂未安排'],['入住日期',p.check_in_date||'—']]},
-   {title:'✈️ 航班信息',rows:[['出发地',p.departure],['目的地',p.destination],['航班日期',p.flight_date||'—'],['航班号',p.flight_number||'—']]}].forEach(sec=>{
+   {title:'✈️ 航班信息',rows:[['出发地',p.departure],['目的地',p.destination],['航班日期/时间',(p.flight_date?(p.flight_date.includes('T')?p.flight_date.replace('T',' ').slice(0,16):p.flight_date):'—')],['航班号',p.flight_number||'—']]}].forEach(sec=>{
     const card=mkEl('div','padding:16px');card.className='card';
     const st=mkEl('p','font-size:13px;font-weight:800;color:#374151;margin-bottom:12px');st.textContent=sec.title;card.appendChild(st);
     sec.rows.forEach(([k,val],i)=>{
@@ -897,7 +920,7 @@ function renderAdminForm(){
     {key:'check_in_date',label:'入住日期',type:'date',required:false},
     {key:'departure',label:'出发地 *',type:'text',   required:true,  placeholder:'如：上海'},
     {key:'destination',label:'目的地 *',type:'text', required:true,  placeholder:'如：三亚'},
-    {key:'flight_date',label:'航班日期',type:'date', required:false},
+    {key:'flight_date',label:'航班日期及时间',type:'datetime-local', required:false},
     {key:'flight_number',label:'航班号',type:'text', required:false, placeholder:'如：MU5512'},
   ];
 
@@ -911,7 +934,7 @@ function renderAdminForm(){
     {key:'check_in_date',label:'入住日期',type:'date',required:false},
     {key:'departure',label:'出发地 *',type:'text',   required:true,  placeholder:'如：上海'},
     {key:'destination',label:'目的地 *',type:'text', required:true,  placeholder:'如：三亚'},
-    {key:'flight_date',label:'航班日期',type:'date', required:false},
+    {key:'flight_date',label:'航班日期及时间',type:'datetime-local', required:false},
     {key:'flight_number',label:'航班号',type:'text', required:false, placeholder:'如：MU5512'},
   ];
 
@@ -964,7 +987,15 @@ function renderAdminForm(){
       inp.style.cssText=inputCss;
       inp.addEventListener('focus',()=>inp.style.borderColor='#2563eb');
       inp.addEventListener('blur',()=>inp.style.borderColor='#e2e8f0');
-      if(p&&p[f.key])inp.value=p[f.key];
+      if(p&&p[f.key]){
+        if(f.key==='flight_date'&&f.type==='datetime-local'){
+          // Convert DATE or DATETIME to datetime-local format YYYY-MM-DDTHH:MM
+          const dv=p[f.key];
+          inp.value=dv.includes('T')?dv.slice(0,16):(dv+'T00:00');
+        } else {
+          inp.value=p[f.key];
+        }
+      }
       // Trigger auto-status on change for relevant fields
       if(['flight_date','flight_number','hotel_name','check_in_date'].includes(f.key)){
         inp.addEventListener('input',autoUpdateStatus);
