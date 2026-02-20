@@ -407,13 +407,10 @@ function renderList(){
       const nm=mkEl('span','font-size:15px;font-weight:700;color:#111827');nm.textContent=p.name;
       r1.appendChild(nm);r1.appendChild(mkBadge(p.status));
       const r2=mkEl('div','font-size:12px;color:#9ca3af;display:flex;align-items:center;gap:4px');
-      function fmtFlight(fd){
-        if(!fd)return '';
-        if(fd.includes('T')){const[d,t]=fd.split('T');return d+' '+t.slice(0,5);}
-        return fd;
-      }
-      const flightInfo=p.status==='待入住'&&p.flight_number
-        ?(p.flight_date?`<span style="color:#d1d5db"> · </span><span style="color:#f97316;font-weight:600">${fmtFlight(p.flight_date)}</span>`:'')+`<span style="color:#d1d5db"> · </span><span>${p.flight_number}</span>`
+      function dateOnly(fd){return fd?fd.slice(0,10):'';}
+      const flightInfo=p.status==='待入住'
+        ?((p.flight_number?`<span style="color:#d1d5db"> · </span><span>${p.flight_number}</span>`:'')+
+          (p.flight_date?`<span style="color:#d1d5db"> · </span><span style="color:#f97316;font-weight:600">${dateOnly(p.flight_date)}</span>`:''))
         :(p.flight_number?`<span style="color:#d1d5db">(${p.flight_number})</span>`:'');
       r2.innerHTML=`<span>✈️</span><span>${p.departure}</span><span style="color:#d1d5db">→</span><span>${p.destination}</span>`+flightInfo;
       info.appendChild(r1);info.appendChild(r2);
@@ -500,7 +497,7 @@ function renderModal(){
   const scroll=mkEl('div','padding:16px 16px 32px;display:flex;flex-direction:column;gap:12px');scroll.className='sheet-scroll';
   [{title:'👤 基本信息',rows:[['姓名',p.name],['性别',p.gender],['岗位',p.position],['分组',p.company]]},
    {title:'🏨 住宿信息',rows:[['酒店名',p.hotel_name||'暂未安排'],['入住日期',p.check_in_date||'—']]},
-   {title:'✈️ 航班信息',rows:[['出发地',p.departure],['目的地',p.destination],['航班日期/时间',(p.flight_date?(p.flight_date.includes('T')?p.flight_date.replace('T',' ').slice(0,16):p.flight_date):'—')],['航班号',p.flight_number||'—']]}].forEach(sec=>{
+   {title:'✈️ 航班信息',rows:[['出发地',p.departure],['目的地',p.destination],['航班日期',(p.flight_date?p.flight_date.slice(0,10):'—')],['航班号',p.flight_number||'—']]}].forEach(sec=>{
     const card=mkEl('div','padding:16px');card.className='card';
     const st=mkEl('p','font-size:13px;font-weight:800;color:#374151;margin-bottom:12px');st.textContent=sec.title;card.appendChild(st);
     sec.rows.forEach(([k,val],i)=>{
@@ -920,7 +917,7 @@ function renderAdminForm(){
     {key:'check_in_date',label:'入住日期',type:'date',required:false},
     {key:'departure',label:'出发地 *',type:'text',   required:true,  placeholder:'如：上海'},
     {key:'destination',label:'目的地 *',type:'text', required:true,  placeholder:'如：三亚'},
-    {key:'flight_date',label:'航班日期及时间',type:'datetime-local', required:false},
+    {key:'flight_date',label:'航班日期',type:'date', required:false},
     {key:'flight_number',label:'航班号',type:'text', required:false, placeholder:'如：MU5512'},
   ];
 
@@ -934,7 +931,7 @@ function renderAdminForm(){
     {key:'check_in_date',label:'入住日期',type:'date',required:false},
     {key:'departure',label:'出发地 *',type:'text',   required:true,  placeholder:'如：上海'},
     {key:'destination',label:'目的地 *',type:'text', required:true,  placeholder:'如：三亚'},
-    {key:'flight_date',label:'航班日期及时间',type:'datetime-local', required:false},
+    {key:'flight_date',label:'航班日期',type:'date', required:false},
     {key:'flight_number',label:'航班号',type:'text', required:false, placeholder:'如：MU5512'},
   ];
 
@@ -988,13 +985,8 @@ function renderAdminForm(){
       inp.addEventListener('focus',()=>inp.style.borderColor='#2563eb');
       inp.addEventListener('blur',()=>inp.style.borderColor='#e2e8f0');
       if(p&&p[f.key]){
-        if(f.key==='flight_date'&&f.type==='datetime-local'){
-          // Convert DATE or DATETIME to datetime-local format YYYY-MM-DDTHH:MM
-          const dv=p[f.key];
-          inp.value=dv.includes('T')?dv.slice(0,16):(dv+'T00:00');
-        } else {
-          inp.value=p[f.key];
-        }
+        // Always use date-only (first 10 chars) for flight_date
+        inp.value=f.key==='flight_date'?String(p[f.key]).slice(0,10):p[f.key];
       }
       // Trigger auto-status on change for relevant fields
       if(['flight_date','flight_number','hotel_name','check_in_date'].includes(f.key)){
