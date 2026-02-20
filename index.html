@@ -65,6 +65,8 @@ input{font-family:inherit}
 .cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;transition:background .12s;padding:2px}
 .cal-day:active{background:#f0f2f5;transform:scale(.88)}
 .grad-orange{background:linear-gradient(135deg,#f97316 0%,#dc2626 100%);color:#fff}
+.grad-blue-modal{background:linear-gradient(135deg,#1e40af 0%,#2563eb 60%,#60a5fa 100%);color:#fff}
+.grad-green-modal{background:linear-gradient(135deg,#065f46 0%,#059669 60%,#34d399 100%);color:#fff}
 .grad-blue{background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 55%,#60a5fa 100%);color:#fff}
 .page{padding:16px 16px 80px}
 @media(min-width:600px){.page{padding:20px 20px 88px}}
@@ -378,6 +380,7 @@ function renderList(){
   ['SMT','亚浩','其他'].forEach(co=>{
     let grp=S.persons.filter(p=>p.company===co);
     if(S.listFilter!=='全部')grp=grp.filter(p=>p.status===S.listFilter);
+    grp=sortByPinyin(grp);
     if(!grp.length)return;any=true;
     const sec=mkEl('div');
     sec.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:4px;height:18px;border-radius:2px;background:${AVC[co]}"></div><span style="font-size:13px;font-weight:800;color:#374151">${co}</span><span style="font-size:12px;color:#9ca3af">(${grp.length}人)</span></div>`;
@@ -461,7 +464,8 @@ function renderModal(){
   const sheet=mkEl('div');sheet.className='sheet';
   const handle=mkEl('div','padding:12px 0 0;display:flex;justify-content:center;flex-shrink:0');
   const bar=mkEl('div','width:38px;height:4px;border-radius:99px;background:#dde3ed');handle.appendChild(bar);
-  const sh=mkEl('div','padding:18px 20px 26px;flex-shrink:0;position:relative');sh.className='grad-orange';
+  const _mc=p.venue_key?'grad-green-modal':p.company==='SMT'?'grad-blue-modal':'grad-orange';
+  const sh=mkEl('div','padding:18px 20px 26px;flex-shrink:0;position:relative');sh.className=_mc;
   const closeBtn=mkEl('button','position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center');
   closeBtn.textContent='✕';closeBtn.addEventListener('click',()=>{S.modal=null;root.remove();});
   const av=mkEl('div','width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;flex-shrink:0');av.textContent=p.name.charAt(0);
@@ -703,7 +707,7 @@ function renderTeamVenue(venueKey){
   const AVC={亚浩:'#f97316',SMT:'#2563eb',其他:'#8b5cf6'};
 
   ['已入住','待入住','未计划'].forEach(st=>{
-    const grp=persons.filter(p=>p.status===st);
+    const grp=sortByPinyin(persons.filter(p=>p.status===st));
     if(!grp.length)return;
     const stColor={'已入住':'#22c55e','待入住':'#f97316','未计划':'#9ca3af'}[st];
     const stIcon={'已入住':'✅','待入住':'⏳','未计划':'❓'}[st];
@@ -766,43 +770,96 @@ function renderAdminLogin(){
   setTimeout(()=>inp.focus(),100);
 }
 
+
+// ===== PINYIN SORT =====
+// Sort Chinese names by pinyin A-Z using localeCompare
+function sortByPinyin(arr, key='name'){
+  return [...arr].sort((a,b)=>(a[key]||'').localeCompare(b[key]||'', 'zh-CN', {sensitivity:'base'}));
+}
+
 function renderAdminPanel(){
   const v=document.getElementById('view');v.innerHTML='';
   const wrap=mkEl('div');
 
-  // Header
+  // Sticky header
   const hdr=mkEl('div','position:sticky;top:0;z-index:20;background:#f5f7fa;border-bottom:1px solid #edf0f4;padding:16px 16px 12px');
-  const hrow=mkEl('div','display:flex;align-items:center;justify-content:space-between;margin-bottom:0');
-  const tt=mkEl('div');tt.innerHTML='<h1 class="page-title">管理后台</h1><p class="page-sub">新增 / 编辑人员信息</p>';
-  const addBtn=mkEl('button','padding:8px 16px;background:#2563eb;color:#fff;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;border:none;cursor:pointer;transition:all .15s');
-  addBtn.innerHTML='<span style="font-size:16px;line-height:1">＋</span> 新增人员';
-  addBtn.addEventListener('click',()=>{S.editPerson=null;renderAdminForm();});
+  const hrow=mkEl('div','display:flex;align-items:center;justify-content:space-between');
+  const tt=mkEl('div');tt.innerHTML='<h1 class="page-title">管理后台</h1><p class="page-sub">驻场人员 + 赛时团队</p>';
+  const addBtn=mkEl('button','padding:8px 14px;background:#2563eb;color:#fff;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px;border:none;cursor:pointer;transition:all .15s');
+  addBtn.innerHTML='<span style="font-size:16px;line-height:1">＋</span> 新增';
+  addBtn.addEventListener('click',()=>{S.editPerson=null;S.adminEditIsTeam=false;renderAdminForm();});
   addBtn.addEventListener('mousedown',()=>addBtn.style.transform='scale(.95)');
   addBtn.addEventListener('mouseup',()=>addBtn.style.transform='scale(1)');
-  hrow.appendChild(tt);hrow.appendChild(addBtn);
-  hdr.appendChild(hrow);wrap.appendChild(hdr);
+  hrow.append(tt,addBtn);hdr.appendChild(hrow);wrap.appendChild(hdr);
 
-  if(S.loading){const pg=mkEl('div');pg.className='page';for(let i=0;i<6;i++)pg.appendChild(mkSkel(64));wrap.appendChild(pg);v.appendChild(wrap);return;}
+  const loading=S.loading||(!_teamAllCache);
+  if(loading){
+    const pg=mkEl('div');pg.className='page';for(let i=0;i<8;i++)pg.appendChild(mkSkel(64));
+    wrap.appendChild(pg);v.appendChild(wrap);
+    if(!_teamAllCache)fetchAllTeamPersons().then(()=>renderAdminPanel());
+    return;
+  }
 
   const content=mkEl('div','padding:12px 16px 88px');
   const AVC={亚浩:'#f97316',SMT:'#2563eb',其他:'#8b5cf6'};
 
+  // ─── Section builder helper ───
+  function buildPersonCard(p, isTeam){
+    const co=isTeam?'赛时':p.company;
+    const color=isTeam?'#10b981':(AVC[p.company]||'#6b7280');
+    const card=mkEl('div','padding:11px 14px;display:flex;align-items:center;gap:11px;margin-bottom:7px');card.className='card';
+    const av=mkEl('div',`width:36px;height:36px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0`);av.textContent=p.name.charAt(0);
+    const info=mkEl('div','flex:1;min-width:0');
+    const row1=mkEl('div','display:flex;align-items:center;gap:7px;margin-bottom:3px');
+    const nm=mkEl('span','font-size:14px;font-weight:700;color:#111827');nm.textContent=p.name;
+    row1.append(nm,mkBadge(p.status));
+    const row2=mkEl('div','font-size:11px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap');
+    row2.textContent=(p.position||'—')+' · '+(isTeam?(p.venue_name||''):(p.departure||'—')+' → '+(p.destination||'—'));
+    info.append(row1,row2);
+    const editBtn=mkEl('button','padding:6px 12px;background:#f0f6ff;color:#2563eb;border-radius:8px;font-size:12px;font-weight:700;border:1px solid #dbeafe;flex-shrink:0;cursor:pointer');
+    editBtn.textContent='编辑';
+    editBtn.addEventListener('click',()=>{S.editPerson=p;S.adminEditIsTeam=isTeam;renderAdminForm();});
+    card.append(av,info,editBtn);
+    return card;
+  }
+
+  function buildSection(title, color, persons, isTeam){
+    if(!persons.length)return null;
+    const sec=mkEl('div','margin-bottom:16px');
+    const secHead=mkEl('div','display:flex;align-items:center;gap:8px;margin-bottom:10px');
+    secHead.innerHTML=`<div style="width:4px;height:18px;border-radius:2px;background:${color}"></div><span style="font-size:13px;font-weight:800;color:#374151">${title}</span><span style="font-size:12px;color:#9ca3af">(${persons.length}人)</span>`;
+    sec.appendChild(secHead);
+    sortByPinyin(persons).forEach(p=>sec.appendChild(buildPersonCard(p, isTeam)));
+    return sec;
+  }
+
+  // ─── 驻场人员 ───
+  const residentHead=mkEl('div','display:flex;align-items:center;gap:10px;padding:10px 0 8px;margin-bottom:4px;border-bottom:2px solid #e5e7eb;margin-top:4px');
+  residentHead.innerHTML='<span style="font-size:15px;font-weight:900;color:#111827;letter-spacing:-.01em">👥 驻场人员</span><span style="font-size:12px;color:#9ca3af">('+S.persons.length+'人)</span>';
+  content.appendChild(residentHead);
+
   ['SMT','亚浩','其他'].forEach(co=>{
     const grp=S.persons.filter(p=>p.company===co);
-    if(!grp.length)return;
-    const sec=mkEl('div','margin-bottom:20px');
-    sec.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:4px;height:18px;border-radius:2px;background:${AVC[co]}"></div><span style="font-size:13px;font-weight:800;color:#374151">${co}</span><span style="font-size:12px;color:#9ca3af">(${grp.length}人)</span></div>`;
-    grp.forEach(p=>{
-      const card=mkEl('div','padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px');card.className='card';
-      const av=mkEl('div',`width:38px;height:38px;border-radius:50%;background:${AVC[p.company]};color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0`);av.textContent=p.name.charAt(0);
-      const info=mkEl('div','flex:1;min-width:0');
-      info.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><span style="font-size:14px;font-weight:700;color:#111827">${p.name}</span>${mkBadge(p.status).outerHTML}</div><div style="font-size:11px;color:#9ca3af">${p.position} · ${p.departure||'—'} → ${p.destination||'—'}</div>`;
-      const editBtn=mkEl('button','padding:7px 14px;background:#f0f6ff;color:#2563eb;border-radius:8px;font-size:12px;font-weight:700;border:1px solid #dbeafe;flex-shrink:0;cursor:pointer;transition:all .15s');
-      editBtn.textContent='编辑';
-      editBtn.addEventListener('click',()=>{S.editPerson=p;renderAdminForm();});
-      card.append(av,info,editBtn);sec.appendChild(card);
-    });
-    content.appendChild(sec);
+    const sec=buildSection(co, AVC[co], grp, false);
+    if(sec)content.appendChild(sec);
+  });
+
+  // ─── 赛时团队 ───
+  const teamHead=mkEl('div','display:flex;align-items:center;gap:10px;padding:10px 0 8px;margin-bottom:4px;border-bottom:2px solid #e5e7eb;margin-top:16px');
+  const totalTeam=(_teamAllCache||[]).length;
+  teamHead.innerHTML='<span style="font-size:15px;font-weight:900;color:#111827;letter-spacing:-.01em">🏅 赛时团队</span><span style="font-size:12px;color:#9ca3af">('+totalTeam+'人)</span>';
+
+  const teamAddBtn=mkEl('button','padding:5px 12px;background:#ecfdf5;color:#059669;border-radius:8px;font-size:12px;font-weight:700;border:1px solid #a7f3d0;cursor:pointer;margin-left:auto');
+  teamAddBtn.textContent='＋ 新增团队成员';
+  teamAddBtn.addEventListener('click',()=>{S.editPerson=null;S.adminEditIsTeam=true;renderAdminForm();});
+  teamHead.appendChild(teamAddBtn);
+  content.appendChild(teamHead);
+
+  // Group team by venue
+  VENUES.forEach(venue=>{
+    const grp=(_teamAllCache||[]).filter(p=>p.venue_key===venue.key);
+    const sec=buildSection(venue.name+' · '+venue.loc, '#10b981', grp, true);
+    if(sec)content.appendChild(sec);
   });
 
   wrap.appendChild(content);v.appendChild(wrap);
@@ -812,56 +869,76 @@ function renderAdminForm(){
   const old=document.getElementById('admin-form-root');if(old)old.remove();
   const p=S.editPerson;
   const isNew=!p;
+  const isTeam=!!S.adminEditIsTeam;
   const root=mkEl('div');root.id='admin-form-root';
   const bd=mkEl('div');bd.className='backdrop';
   const sheet=mkEl('div');sheet.className='sheet';sheet.style.maxHeight='95vh';
 
-  // Handle
   const handle=mkEl('div','padding:12px 0 0;display:flex;justify-content:center;flex-shrink:0');
-  const bar=mkEl('div','width:38px;height:4px;border-radius:99px;background:#dde3ed');handle.appendChild(bar);
+  handle.appendChild(mkEl('div','width:38px;height:4px;border-radius:99px;background:#dde3ed'));
 
-  // Sheet header
   const sh=mkEl('div','padding:16px 20px;flex-shrink:0;border-bottom:1px solid #edf0f4;display:flex;align-items:center;justify-content:space-between;background:#fff');
   const stitle=mkEl('div');
-  stitle.innerHTML=`<p style="font-size:16px;font-weight:800;color:#111827">${isNew?'新增人员':'编辑人员'}</p><p style="font-size:12px;color:#9ca3af;margin-top:2px">${isNew?'填写新成员信息':'修改 '+p.name+' 的信息'}</p>`;
+  const typeLabel=isTeam?'赛时团队':'驻场人员';
+  stitle.innerHTML=`<p style="font-size:16px;font-weight:800;color:#111827">${isNew?'新增'+typeLabel:'编辑'+typeLabel}</p><p style="font-size:12px;color:#9ca3af;margin-top:2px">${isNew?'填写新成员信息':'修改 '+(p?p.name:'')+'的信息'}</p>`;
   const closeBtn=mkEl('button','width:30px;height:30px;border-radius:50%;background:#f3f4f6;color:#6b7280;font-size:16px;display:flex;align-items:center;justify-content:center');
   closeBtn.textContent='✕';closeBtn.addEventListener('click',()=>root.remove());
   sh.append(stitle,closeBtn);
 
-  // Form scroll
   const scroll=mkEl('div','padding:16px 16px 24px');scroll.className='sheet-scroll';
 
-  const fields=[
-    {key:'name',      label:'姓名 *',   type:'text',     required:true,  placeholder:'请输入姓名'},
-    {key:'gender',    label:'性别 *',   type:'select',   required:true,  options:['男','女']},
-    {key:'position',  label:'岗位',     type:'text',     required:false, placeholder:'如：工程师'},
-    {key:'company',   label:'分组 *',   type:'select',   required:true,  options:['亚浩','SMT','其他']},
-    {key:'status',    label:'状态 *',   type:'select',   required:true,  options:['已入住','待入住','未计划']},
-    {key:'hotel_name',label:'酒店名',   type:'text',     required:false, placeholder:'如：三亚湾大酒店'},
-    {key:'check_in_date',label:'入住日期', type:'date',  required:false, placeholder:''},
-    {key:'departure', label:'出发地 *', type:'text',     required:true,  placeholder:'如：上海'},
-    {key:'destination',label:'目的地 *',type:'text',     required:true,  placeholder:'如：三亚'},
-    {key:'flight_date',label:'航班日期',type:'date',     required:false, placeholder:''},
-    {key:'flight_number',label:'航班号',type:'text',     required:false, placeholder:'如：MU5512'},
+  // Fields differ for team vs resident
+  const baseFields=[
+    {key:'name',     label:'姓名 *',  type:'text',   required:true,  placeholder:'请输入姓名'},
+    {key:'gender',   label:'性别 *',  type:'select', required:true,  options:['男','女']},
+    {key:'position', label:'岗位',    type:'text',   required:false, placeholder:'如：技术官员'},
+    {key:'status',   label:'状态 *',  type:'select', required:true,  options:['已入住','待入住','未计划']},
+    {key:'hotel_name',label:'酒店名', type:'text',   required:false, placeholder:'如：三亚湾大酒店'},
+    {key:'check_in_date',label:'入住日期',type:'date',required:false},
+    {key:'departure',label:'出发地 *',type:'text',   required:true,  placeholder:'如：上海'},
+    {key:'destination',label:'目的地 *',type:'text', required:true,  placeholder:'如：三亚'},
+    {key:'flight_date',label:'航班日期',type:'date', required:false},
+    {key:'flight_number',label:'航班号',type:'text', required:false, placeholder:'如：MU5512'},
   ];
+
+  const residentFields=[
+    {key:'name',     label:'姓名 *',  type:'text',   required:true,  placeholder:'请输入姓名'},
+    {key:'gender',   label:'性别 *',  type:'select', required:true,  options:['男','女']},
+    {key:'position', label:'岗位',    type:'text',   required:false, placeholder:'如：工程师'},
+    {key:'company',  label:'分组 *',  type:'select', required:true,  options:['亚浩','SMT','其他']},
+    {key:'status',   label:'状态 *',  type:'select', required:true,  options:['已入住','待入住','未计划']},
+    {key:'hotel_name',label:'酒店名', type:'text',   required:false, placeholder:'如：三亚湾大酒店'},
+    {key:'check_in_date',label:'入住日期',type:'date',required:false},
+    {key:'departure',label:'出发地 *',type:'text',   required:true,  placeholder:'如：上海'},
+    {key:'destination',label:'目的地 *',type:'text', required:true,  placeholder:'如：三亚'},
+    {key:'flight_date',label:'航班日期',type:'date', required:false},
+    {key:'flight_number',label:'航班号',type:'text', required:false, placeholder:'如：MU5512'},
+  ];
+
+  const teamOnlyFields=[
+    {key:'venue_key', label:'场馆 *', type:'select', required:true,
+     options:VENUES.map(v=>v.key), optionLabels:VENUES.map(v=>v.name+' ('+v.loc+')')},
+  ];
+
+  let fields=isTeam?[...baseFields.slice(0,3),...teamOnlyFields,...baseFields.slice(3)]:residentFields;
 
   const inputs={};
   fields.forEach(f=>{
     const group=mkEl('div','margin-bottom:14px');
-    const lbl=mkEl('label',`display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px`);lbl.textContent=f.label;
+    const lbl=mkEl('label','display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px');lbl.textContent=f.label;
     let inp;
+    const inputCss='width:100%;height:48px;border:2px solid #e2e8f0;border-radius:11px;padding:0 14px;font-size:15px;outline:none;background:#fff;color:#111827;transition:border-color .2s;font-family:inherit';
     if(f.type==='select'){
       inp=document.createElement('select');
-      inp.style.cssText='width:100%;height:48px;border:2px solid #e2e8f0;border-radius:11px;padding:0 12px;font-size:15px;outline:none;background:#fff;color:#111827;transition:border-color .2s;font-family:inherit';
+      inp.style.cssText=inputCss.replace('padding:0 14px','padding:0 12px');
       inp.addEventListener('focus',()=>inp.style.borderColor='#2563eb');
       inp.addEventListener('blur',()=>inp.style.borderColor='#e2e8f0');
-      if(!f.required){const opt=document.createElement('option');opt.value='';opt.textContent='请选择';inp.appendChild(opt);}
-      f.options.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;inp.appendChild(opt);});
+      if(!f.required){const o=document.createElement('option');o.value='';o.textContent='请选择';inp.appendChild(o);}
+      (f.options||[]).forEach((o,i)=>{const opt=document.createElement('option');opt.value=o;opt.textContent=f.optionLabels?f.optionLabels[i]:o;inp.appendChild(opt);});
       if(p&&p[f.key])inp.value=p[f.key];
     } else {
-      inp=document.createElement('input');
-      inp.type=f.type;inp.placeholder=f.placeholder||'';
-      inp.style.cssText='width:100%;height:48px;border:2px solid #e2e8f0;border-radius:11px;padding:0 14px;font-size:15px;outline:none;background:#fff;color:#111827;transition:border-color .2s;font-family:inherit';
+      inp=document.createElement('input');inp.type=f.type;inp.placeholder=f.placeholder||'';
+      inp.style.cssText=inputCss;
       inp.addEventListener('focus',()=>inp.style.borderColor='#2563eb');
       inp.addEventListener('blur',()=>inp.style.borderColor='#e2e8f0');
       if(p&&p[f.key])inp.value=p[f.key];
@@ -870,60 +947,78 @@ function renderAdminForm(){
     group.append(lbl,inp);scroll.appendChild(group);
   });
 
-  // Error msg
   const errMsg=mkEl('p','font-size:13px;color:#ef4444;text-align:center;min-height:18px;margin-bottom:8px');
   scroll.appendChild(errMsg);
 
-  // Submit button
   const submitBtn=document.createElement('button');submitBtn.className='btn-primary';
   submitBtn.textContent=isNew?'确认新增':'保存修改';
   submitBtn.addEventListener('click',async()=>{
-    // Validate required
-    const required=['name','gender','company','status','departure','destination'];
-    for(const k of required){
-      if(!inputs[k].value.trim()){
-        errMsg.textContent='请填写带 * 的必填项：'+fields.find(f=>f.key===k).label.replace(' *','');
-        inputs[k].style.borderColor='#ef4444';
-        inputs[k].focus();return;
+    const requiredKeys=isTeam?['name','gender','status','venue_key','departure','destination']:['name','gender','company','status','departure','destination'];
+    for(const k of requiredKeys){
+      if(!inputs[k]||!inputs[k].value.trim()){
+        const fl=fields.find(f=>f.key===k);
+        errMsg.textContent='请填写必填项：'+(fl?fl.label.replace(' *',''):k);
+        if(inputs[k]){inputs[k].style.borderColor='#ef4444';inputs[k].focus();}
+        return;
       }
     }
     submitBtn.disabled=true;submitBtn.textContent='保存中...';
-    const data={
-      name:inputs.name.value.trim(),
-      gender:inputs.gender.value,
-      position:inputs.position.value.trim()||'—',
-      company:inputs.company.value,
-      status:inputs.status.value,
-      hotel_name:inputs.hotel_name.value.trim()||null,
-      check_in_date:inputs.check_in_date.value||null,
-      departure:inputs.departure.value.trim()||'待定',
-      destination:inputs.destination.value.trim()||'待定',
-      flight_date:inputs.flight_date.value||null,
-      flight_number:inputs.flight_number.value.trim()||null,
-    };
-    try{
-      if(isNew){
-        await sbInsert('persons',data);
-      } else {
-        await sbUpdate('persons',p.id,data);
-      }
-      _cache=null;
-      const persons=await fetchPersons(true);
-      S.persons=persons;S.loading=false;
-      root.remove();
-      renderAdminPanel();
-    }catch(e){
-      errMsg.textContent='保存失败：'+e.message;
-      submitBtn.disabled=false;submitBtn.textContent=isNew?'确认新增':'保存修改';
+
+    if(isTeam){
+      const vk=inputs.venue_key.value;
+      const vobj=VENUES.find(v=>v.key===vk)||{};
+      const data={
+        name:inputs.name.value.trim(),
+        gender:inputs.gender.value,
+        position:inputs.position.value.trim()||'—',
+        venue_key:vk,
+        venue_name:vobj.name||vk,
+        venue_loc:vobj.loc||'',
+        status:inputs.status.value,
+        hotel_name:inputs.hotel_name.value.trim()||null,
+        check_in_date:inputs.check_in_date.value||null,
+        departure:inputs.departure.value.trim()||'待定',
+        destination:inputs.destination.value.trim()||'三亚',
+        flight_date:inputs.flight_date.value||null,
+        flight_number:inputs.flight_number.value.trim()||null,
+      };
+      try{
+        if(isNew)await sbInsert('team_persons',data);
+        else await sbUpdate('team_persons',p.id,data);
+        _teamAllCache=null;_teamCache={};
+        await fetchAllTeamPersons(true);
+        root.remove();renderAdminPanel();
+      }catch(e){errMsg.textContent='保存失败：'+e.message;submitBtn.disabled=false;submitBtn.textContent=isNew?'确认新增':'保存修改';}
+    } else {
+      const data={
+        name:inputs.name.value.trim(),
+        gender:inputs.gender.value,
+        position:inputs.position.value.trim()||'—',
+        company:inputs.company.value,
+        status:inputs.status.value,
+        hotel_name:inputs.hotel_name.value.trim()||null,
+        check_in_date:inputs.check_in_date.value||null,
+        departure:inputs.departure.value.trim()||'待定',
+        destination:inputs.destination.value.trim()||'待定',
+        flight_date:inputs.flight_date.value||null,
+        flight_number:inputs.flight_number.value.trim()||null,
+      };
+      try{
+        if(isNew)await sbInsert('persons',data);
+        else await sbUpdate('persons',p.id,data);
+        _cache=null;
+        const persons=await fetchPersons(true);
+        S.persons=persons;S.loading=false;
+        root.remove();renderAdminPanel();
+      }catch(e){errMsg.textContent='保存失败：'+e.message;submitBtn.disabled=false;submitBtn.textContent=isNew?'确认新增':'保存修改';}
     }
   });
   scroll.appendChild(submitBtn);
 
   sheet.append(handle,sh,scroll);
-  // Swipe down close
   let swY=0;
   sheet.addEventListener('touchstart',e=>{swY=e.touches[0].clientY;},{passive:true});
-  sheet.addEventListener('touchmove',e=>{if(e.touches[0].clientY-swY>100){root.remove();}},{passive:true});
+  sheet.addEventListener('touchmove',e=>{if(e.touches[0].clientY-swY>100)root.remove();},{passive:true});
   bd.addEventListener('click',()=>root.remove());
   root.append(bd,sheet);
   document.getElementById('app').appendChild(root);
