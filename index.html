@@ -923,11 +923,34 @@ function renderAdminForm(){
   let fields=isTeam?[...baseFields.slice(0,3),...teamOnlyFields,...baseFields.slice(3)]:residentFields;
 
   const inputs={};
+
+  // ── Auto-status logic ──
+  function autoUpdateStatus(){
+    const st=inputs.status;if(!st)return;
+    const flightDate=inputs.flight_date?inputs.flight_date.value.trim():'';
+    const flightNum=inputs.flight_number?inputs.flight_number.value.trim():'';
+    const hotel=inputs.hotel_name?inputs.hotel_name.value.trim():'';
+    const checkIn=inputs.check_in_date?inputs.check_in_date.value.trim():'';
+    const today=new Date().toISOString().split('T')[0];
+
+    if(st.value==='未计划' && flightDate && flightNum){
+      // Rule 1: flight info entered → 待入住
+      st.value='待入住';
+      st.style.background='#fff7ed';
+      setTimeout(()=>st.style.background='#fff',600);
+    } else if(st.value==='待入住' && hotel && checkIn && checkIn<=today){
+      // Rule 2: hotel filled + today >= check_in_date → 已入住
+      st.value='已入住';
+      st.style.background='#f0fdf4';
+      setTimeout(()=>st.style.background='#fff',600);
+    }
+  }
+
   fields.forEach(f=>{
     const group=mkEl('div','margin-bottom:14px');
     const lbl=mkEl('label','display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px');lbl.textContent=f.label;
     let inp;
-    const inputCss='width:100%;height:48px;border:2px solid #e2e8f0;border-radius:11px;padding:0 14px;font-size:15px;outline:none;background:#fff;color:#111827;transition:border-color .2s;font-family:inherit';
+    const inputCss='width:100%;height:48px;border:2px solid #e2e8f0;border-radius:11px;padding:0 14px;font-size:15px;outline:none;background:#fff;color:#111827;transition:border-color .2s,background .3s;font-family:inherit';
     if(f.type==='select'){
       inp=document.createElement('select');
       inp.style.cssText=inputCss.replace('padding:0 14px','padding:0 12px');
@@ -942,10 +965,20 @@ function renderAdminForm(){
       inp.addEventListener('focus',()=>inp.style.borderColor='#2563eb');
       inp.addEventListener('blur',()=>inp.style.borderColor='#e2e8f0');
       if(p&&p[f.key])inp.value=p[f.key];
+      // Trigger auto-status on change for relevant fields
+      if(['flight_date','flight_number','hotel_name','check_in_date'].includes(f.key)){
+        inp.addEventListener('input',autoUpdateStatus);
+        inp.addEventListener('change',autoUpdateStatus);
+      }
     }
     inputs[f.key]=inp;
     group.append(lbl,inp);scroll.appendChild(group);
   });
+
+  // Status hint label
+  const statusHint=mkEl('p','font-size:11px;color:#6b7280;margin:-8px 0 12px;padding:0 2px');
+  statusHint.innerHTML='💡 填写航班信息自动变为<b>待入住</b>；填写酒店且入住日期≤今日自动变为<b>已入住</b>';
+  scroll.appendChild(statusHint);
 
   const errMsg=mkEl('p','font-size:13px;color:#ef4444;text-align:center;min-height:18px;margin-bottom:8px');
   scroll.appendChild(errMsg);
