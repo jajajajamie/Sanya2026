@@ -117,6 +117,63 @@ async function sbUpdate(table,id,data){
   return r.json();
 }
 
+// ===== AUDIT LOG =====
+let _auditCache=null;
+let _auditCacheTime=0;
+
+async function auditLog(action, personName, detail, tableName){
+  try{
+    await sbInsert('audit_log',{action,person_name:personName,detail,table_name:tableName});
+    _auditCache=null; // invalidate cache
+  }catch(e){ console.warn('audit log failed:',e.message); }
+}
+
+async function fetchAuditLog(){
+  if(_auditCache&&Date.now()-_auditCacheTime<15000)return _auditCache;
+  try{
+    // Only fetch last 7 days
+    const since=new Date(Date.now()-7*24*60*60*1000).toISOString();
+    const url=`${SB_URL}/rest/v1/audit_log?created_at=gte.${since}&order=created_at.desc&limit=100`;
+    const r=await fetch(url,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    // Purge old entries (>7 days) silently
+    pruneOldAuditLogs();
+    _auditCache=data;_auditCacheTime=Date.now();
+    return data;
+  }catch(e){
+    console.warn('audit fetch failed:',e.message);
+    return _auditCache||[];
+  }
+}
+
+async function pruneOldAuditLogs(){
+  try{
+    const cutoff=new Date(Date.now()-7*24*60*60*1000).toISOString();
+    await fetch(`${SB_URL}/rest/v1/audit_log?created_at=lt.${cutoff}`,{
+      method:'DELETE',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    });
+  }catch(e){}
+}
+
+function diffPersonFields(oldP, newP){
+  const LABELS={
+    name:'姓名',gender:'性别',position:'岗位',company:'分组',status:'状态',
+    hotel_name:'酒店名',check_in_date:'入住日期',departure:'出发地',
+    destination:'目的地',flight_date:'航班日期',flight_number:'航班号',
+    venue_name:'场馆'
+  };
+  const changed=[];
+  Object.keys(LABELS).forEach(k=>{
+    const ov=(oldP[k]||'').toString().slice(0,10);
+    const nv=(newP[k]||'').toString().slice(0,10);
+    if(ov!==nv)changed.push(LABELS[k]);
+  });
+  if(!changed.length)return '信息无变化';
+  return '修改了'+changed.join('、');
+}
+
 // ===== MOCK DATA =====
 const MOCK=[
   {id:'1',name:'张晓明',gender:'男',position:'技术总监',company:'亚浩',status:'已入住',hotel_name:'三亚亚特兰蒂斯酒店',check_in_date:'2026-02-15',departure:'上海',destination:'三亚',flight_date:'2026-02-14',flight_number:'MU5512'},
@@ -821,6 +878,63 @@ function renderAdminPanel(){
   }
 
   const content=mkEl('div','padding:12px 16px 88px');
+
+  // ── Audit Log Panel ──
+  const auditWrap=mkEl('div','margin-bottom:20px');
+  const auditHead=mkEl('div','display:flex;align-items:center;justify-content:space-between;margin-bottom:10px');
+  auditHead.innerHTML='<span style="font-size:14px;font-weight:800;color:#111827">📋 修改记录 <span style="font-size:11px;font-weight:500;color:#9ca3af">（近7天）</span></span>';
+  const auditRefresh=mkEl('button','padding:5px 10px;background:#f3f4f6;border-radius:8px;font-size:11px;color:#6b7280;border:none;cursor:pointer');
+  auditRefresh.textContent='刷新';
+  auditHead.appendChild(auditRefresh);
+  auditWrap.appendChild(auditHead);
+
+  const auditList=mkEl('div','display:flex;flex-direction:column;gap:6px');
+  auditWrap.appendChild(auditList);
+
+  function renderAuditList(logs){
+    auditList.innerHTML='';
+    if(!logs||!logs.length){
+      const empty=mkEl('div','padding:16px;text-align:center;font-size:13px;color:#b0bac8;background:#f9fafb;border-radius:10px');
+      empty.textContent='暂无修改记录';
+      auditList.appendChild(empty);
+      return;
+    }
+    logs.forEach(log=>{
+      const row=mkEl('div','padding:10px 12px;background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:flex-start;gap:10px');
+      const actionColor={'新增':'#22c55e','修改':'#f97316','删除':'#ef4444'}[log.action]||'#6b7280';
+      const actionBg={'新增':'#f0fdf4','修改':'#fff7ed','删除':'#fef2f2'}[log.action]||'#f9fafb';
+      const tag=mkEl('span',`font-size:10px;font-weight:700;color:${actionColor};background:${actionBg};border-radius:6px;padding:2px 7px;flex-shrink:0;margin-top:1px`);
+      tag.textContent=log.action;
+      const info=mkEl('div','flex:1;min-width:0');
+      const detail=mkEl('p','font-size:13px;color:#374151;font-weight:500;line-height:1.4');detail.textContent=log.detail;
+      const ts=new Date(log.created_at);
+      const timeStr=ts.toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit'})+' '+ts.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+      const time=mkEl('p','font-size:11px;color:#b0bac8;margin-top:2px');time.textContent=timeStr;
+      info.append(detail,time);
+      row.append(tag,info);
+      auditList.appendChild(row);
+    });
+  }
+
+  // Load audit log
+  const auditSkel=mkEl('div');
+  for(let i=0;i<3;i++)auditSkel.appendChild(mkSkel(52));
+  auditList.appendChild(auditSkel);
+
+  fetchAuditLog().then(logs=>{renderAuditList(logs);});
+  auditRefresh.addEventListener('click',async()=>{
+    _auditCache=null;
+    auditRefresh.textContent='刷新中...';auditRefresh.disabled=true;
+    const logs=await fetchAuditLog();
+    renderAuditList(logs);
+    auditRefresh.textContent='刷新';auditRefresh.disabled=false;
+  });
+
+  content.appendChild(auditWrap);
+
+  // Divider
+  const divider=mkEl('div','height:1px;background:#e5e7eb;margin-bottom:16px');
+  content.appendChild(divider);
   const AVC={亚浩:'#f97316',SMT:'#2563eb',其他:'#8b5cf6'};
 
   // ─── Section builder helper ───
@@ -1039,8 +1153,14 @@ function renderAdminForm(){
         flight_number:inputs.flight_number.value.trim()||null,
       };
       try{
-        if(isNew)await sbInsert('team_persons',data);
-        else await sbUpdate('team_persons',p.id,data);
+        if(isNew){
+          await sbInsert('team_persons',data);
+          await auditLog('新增',data.name,'新增了赛时团队成员 '+data.name+'（'+data.venue_name+'）','team_persons');
+        } else {
+          const detail=diffPersonFields(p,data);
+          await sbUpdate('team_persons',p.id,data);
+          await auditLog('修改',data.name,detail+' · '+data.name+'（'+data.venue_name+'）','team_persons');
+        }
         _teamAllCache=null;_teamCache={};
         await fetchAllTeamPersons(true);
         root.remove();renderAdminPanel();
@@ -1060,8 +1180,14 @@ function renderAdminForm(){
         flight_number:inputs.flight_number.value.trim()||null,
       };
       try{
-        if(isNew)await sbInsert('persons',data);
-        else await sbUpdate('persons',p.id,data);
+        if(isNew){
+          await sbInsert('persons',data);
+          await auditLog('新增',data.name,'新增了驻场人员 '+data.name+'（'+data.company+'）','persons');
+        } else {
+          const detail=diffPersonFields(p,data);
+          await sbUpdate('persons',p.id,data);
+          await auditLog('修改',data.name,detail+' · '+data.name+'（驻场人员）','persons');
+        }
         _cache=null;
         const persons=await fetchPersons(true);
         S.persons=persons;S.loading=false;
